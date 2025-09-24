@@ -16,21 +16,49 @@ open class SubviewAttachingTextView: UITextView {
 
     public override init(frame: CGRect, textContainer: NSTextContainer?) {
         super.init(frame: frame, textContainer: textContainer)
-        self.commonInit()
     }
 
     public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        self.commonInit()
+    }
+
+    deinit {
+        disconnectBehavior()
     }
 
     private let attachmentBehavior = SubviewAttachingTextViewBehavior()
+    private var behaviorConnected = false
 
-    private func commonInit() {
-        // Connect the attachment behavior
-        self.attachmentBehavior.textView = self
-        self.layoutManager.delegate = self.attachmentBehavior
-        self.textStorage.delegate = self.attachmentBehavior
+    open override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil {
+            connectBehaviorIfNeeded()
+        } else {
+            disconnectBehavior()
+        }
+    }
+
+    public func connectBehaviorIfNeeded() {
+        guard !behaviorConnected else { return }
+
+        attachmentBehavior.textView = self
+        layoutManager.delegate = attachmentBehavior
+        textStorage.delegate = attachmentBehavior
+        behaviorConnected = true
+    }
+
+    public func disconnectBehavior() {
+        guard behaviorConnected else { return }
+        if layoutManager.delegate === attachmentBehavior {
+            layoutManager.delegate = nil
+        }
+
+        if textStorage.delegate === attachmentBehavior {
+            textStorage.delegate = nil
+        }
+
+        attachmentBehavior.textView = nil
+        behaviorConnected = false
     }
 
     open override var textContainerInset: UIEdgeInsets {
